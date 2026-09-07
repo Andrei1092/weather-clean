@@ -180,19 +180,27 @@ body {
 .progress-bar { width: 100%; height: clamp(6px, 1vh, 9px); background: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 100%); }
 
+/* 3 колонки вместо 2: Восход, Закат, Луна */
 .sun-times {
-    display: flex;
-    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
     padding-top: clamp(8px, 1.2vh, 12px);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     margin-bottom: clamp(8px, 1.5vh, 15px);
 }
-.sun-time { text-align: center; }
-.sun-icon { font-size: clamp(20px, 4vh, 32px); margin-bottom: 2px; }
+.sun-time {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 6px 2px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.sun-icon { font-size: clamp(18px, 3.5vh, 28px); margin-bottom: 2px; }
 .sun-label { font-size: clamp(9px, 1.5vh, 12px); opacity: 0.8; }
-.sun-value { font-size: clamp(11px, 2vh, 15px); font-weight: 600; margin-top: 2px; }
+.sun-value { font-size: clamp(11px, 1.8vh, 14px); font-weight: 600; margin-top: 2px; }
 
-/* Почасовой прогноз на 6 часов (каждый час) */
+/* Почасовой прогноз на 6 часов */
 .forecast-container {
     padding-top: clamp(8px, 1.2vh, 12px);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -338,12 +346,17 @@ body {
             <div class="sun-time">
                 <div class="sun-icon">🌅</div>
                 <div class="sun-label">Восход</div>
-                <div class="sun-value sunrise"></div>
+                <div class="sun-value sunrise">05:51</div>
             </div>
             <div class="sun-time">
                 <div class="sun-icon">🌇</div>
                 <div class="sun-label">Закат</div>
-                <div class="sun-value sunset"></div>
+                <div class="sun-value sunset">19:21</div>
+            </div>
+            <div class="sun-time">
+                <div class="sun-icon" id="moon-icon">🌕</div>
+                <div class="sun-label">Луна</div>
+                <div class="sun-value" id="moon-phase">Растущая</div>
             </div>
         </div>
 
@@ -379,6 +392,34 @@ function getWeatherDescription(code) {
     return map[code] || 'Облачно';
 }
 
+// Функция для расчета лунной фазы по дате
+function getMoonPhaseInfo(date = new Date()) {
+    // Известное новолуние как точка отсчета
+    const knownNewMoon = new Date('2023-01-21T20:53:00Z');
+    const diffDays = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
+    const synodicMonth = 29.53058770576;
+    const phase = (diffDays % synodicMonth) / synodicMonth;
+    const normalizedPhase = phase < 0 ? phase + 1 : phase;
+
+    if (normalizedPhase < 0.03 || normalizedPhase > 0.97) {
+        return { name: 'Новолуние', icon: '🌑' };
+    } else if (normalizedPhase < 0.22) {
+        return { name: 'Растущая', icon: '🌒' };
+    } else if (normalizedPhase < 0.28) {
+        return { name: 'Первая четверть', icon: '🌓' };
+    } else if (normalizedPhase < 0.47) {
+        return { name: 'Растущая', icon: '🌔' };
+    } else if (normalizedPhase < 0.53) {
+        return { name: 'Полнолуние', icon: '🌕' };
+    } else if (normalizedPhase < 0.72) {
+        return { name: 'Убывающая', icon: '🌖' };
+    } else if (normalizedPhase < 0.78) {
+        return { name: 'Последняя четверть', icon: '🌗' };
+    } else {
+        return { name: 'Убывающая', icon: '🌘' };
+    }
+}
+
 function updateDateTime() {
     const now = new Date();
     const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -388,7 +429,6 @@ function updateDateTime() {
 
 async function fetchWeather() {
     try {
-        // Запрос к Open-Meteo для Тюмени (с почасовыми данными)
         const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=57.1522&longitude=65.5272&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,surface_pressure,cloud_cover&hourly=temperature_2m,weather_code&timezone=auto');
         const data = await response.json();
         
@@ -405,18 +445,20 @@ async function fetchWeather() {
         document.querySelector('.wind-speed').textContent = current.wind_speed_10m + ' м/с';
         document.querySelector('.humidity').textContent = current.relative_humidity_2m + '%';
         document.querySelector('.pressure').textContent = Math.round(current.surface_pressure) + ' гПа';
-        document.querySelector('.visibility').textContent = '10.0 км'; // приблизительно
+        document.querySelector('.visibility').textContent = '10.0 км';
         
         document.querySelector('.humidity-percent').textContent = current.relative_humidity_2m + '%';
         document.getElementById('humidity-bar').style.width = current.relative_humidity_2m + '%';
         
         document.querySelector('.clouds-percent').textContent = current.cloud_cover + '%';
         document.getElementById('clouds-bar').style.width = current.cloud_cover + '%';
-        
-        document.querySelector('.sunrise').textContent = '05:51';
-        document.querySelector('.sunset').textContent = '19:21';
 
-        // Почасовой прогноз начиная со следующего часа (+1 час) на 6 часов вперед
+        // Обновляем информацию о луне
+        const moon = getMoonPhaseInfo();
+        document.getElementById('moon-icon').textContent = moon.icon;
+        document.getElementById('moon-phase').textContent = moon.name;
+
+        // Почасовой прогноз
         const forecastGrid = document.getElementById('forecast-grid');
         forecastGrid.innerHTML = '';
 
@@ -431,7 +473,7 @@ async function fetchWeather() {
         const next6HoursCodes = data.hourly.weather_code.slice(startIndex, startIndex + 6);
 
         for (let i = 0; i < next6HoursTimes.length; i++) {
-            const timeFormatted = next6HoursTimes[i].slice(11, 16); // "HH:MM"
+            const timeFormatted = next6HoursTimes[i].slice(11, 16);
             const card = document.createElement('div');
             card.className = 'forecast-card';
             card.innerHTML = `
@@ -450,12 +492,10 @@ async function fetchWeather() {
 
 fetchWeather();
 
-// Часы каждую минуту
 setInterval(() => {
     document.querySelector('.date-time').textContent = updateDateTime();
 }, 60000);
 
-// Автообновление каждые 15 минут
 setInterval(fetchWeather, 15 * 60 * 1000);
 </script>
 </body>
