@@ -180,19 +180,11 @@ body {
 .progress-bar { width: 100%; height: clamp(6px, 1vh, 9px); background: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 100%); }
 
-/* Увеличенный почасовой прогноз (выше по иерархии) */
+/* Почасовой прогноз */
 .forecast-container {
     padding-top: clamp(8px, 1.2vh, 12px);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     margin-bottom: clamp(8px, 1.5vh, 15px);
-}
-
-.forecast-title {
-    font-size: clamp(12px, 2vh, 15px);
-    opacity: 0.9;
-    margin-bottom: 8px;
-    text-align: center;
-    font-weight: 600;
 }
 
 .forecast-grid {
@@ -232,7 +224,7 @@ body {
     font-weight: 600;
 }
 
-/* Компактный блок Восход, Закат и Луна (ниже) */
+/* Блок Восход, Закат и Луна */
 .sun-times {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -350,13 +342,12 @@ body {
             </div>
         </div>
         
-        <!-- Почасовой прогноз (увеличенный и выше) -->
+        <!-- Почасовой прогноз -->
         <div class="forecast-container">
-            <div class="forecast-title">Прогноз по часам (следующие 6 часов)</div>
             <div class="forecast-grid" id="forecast-grid"></div>
         </div>
 
-        <!-- Блок Восход, Закат и Луна (компактный и ниже) -->
+        <!-- Блок Восход, Закат и Луна -->
         <div class="sun-times">
             <div class="sun-time">
                 <div class="sun-icon">🌅</div>
