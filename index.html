@@ -3,10 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Защищенный погодный информер</title>
+<title>Погодный информер</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; overflow: hidden; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
 body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
@@ -14,16 +23,28 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: clamp(10px, 2vh, 20px);
+    padding: clamp(5px, 1vh, 10px);
     position: relative;
 }
 
 .background-animation {
-    position: fixed; width: 100%; height: 100%; top: 0; left: 0; z-index: 0; opacity: 0.1; pointer-events: none;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    opacity: 0.1;
+    pointer-events: none;
 }
+
 .circle {
-    position: absolute; border-radius: 50%; background: white; animation: float 15s infinite ease-in-out;
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: float 15s infinite ease-in-out;
 }
+
 .circle:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 20%; animation-delay: 0s; }
 .circle:nth-child(2) { width: 120px; height: 120px; top: 60%; left: 80%; animation-delay: 2s; }
 .circle:nth-child(3) { width: 60px; height: 60px; top: 80%; left: 10%; animation-delay: 4s; }
@@ -34,121 +55,213 @@ body {
     50% { transform: translateY(-100px) rotate(180deg); opacity: 0.3; }
 }
 
-.hidden { display: none !important; }
-
-/* Окно авторизации */
-#auth-screen {
-    position: relative; z-index: 10;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 30px;
-    width: 320px;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-#auth-screen h2 { margin-bottom: 20px; font-size: 22px; }
-#auth-screen input {
-    width: 100%; padding: 10px 14px; font-size: 16px; border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(0, 0, 0, 0.2); color: #fff;
-    margin-bottom: 15px; outline: none; text-align: center;
-}
-#auth-screen input::placeholder { color: rgba(255, 255, 255, 0.6); }
-#auth-screen button {
-    width: 100%; padding: 10px; font-size: 16px; border-radius: 10px; border: none;
-    background: #ffffff; color: #764ba2; font-weight: 600; cursor: pointer; transition: background 0.2s;
-}
-#auth-screen button:hover { background: #f0f0f0; }
-#error-msg { color: #ff8080; font-size: 13px; margin-top: 10px; }
-
-/* Основной блок погоды */
 #wrapper {
     position: relative;
     z-index: 1;
-    padding: clamp(15px, 2vh, 30px);
+    padding: clamp(10px, 1.5vh, 20px);
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: clamp(15px, 3vh, 30px);
+    border-radius: clamp(15px, 2.5vh, 25px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    width: clamp(300px, 90vw, 600px);
-    max-height: 95vh;
+    width: clamp(300px, 90vw, 550px);
+    max-height: 98vh;
     overflow-y: auto;
+    animation: fadeIn 1s ease-in;
 }
 
-#wrapper::-webkit-scrollbar { width: 6px; }
+#wrapper::-webkit-scrollbar { width: 4px; }
 #wrapper::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 10px; }
 
-.loading { text-align: center; font-size: clamp(14px, 2.5vh, 20px); padding: clamp(20px, 4vh, 40px); }
-.spinner {
-    width: clamp(40px, 6vh, 50px); height: clamp(40px, 6vh, 50px); margin: clamp(10px, 2vh, 20px) auto;
-    border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
+
+.loading {
+    text-align: center;
+    font-size: clamp(14px, 2vh, 18px);
+    padding: clamp(20px, 3vh, 30px);
+}
+
+.spinner {
+    width: clamp(35px, 5vh, 45px);
+    height: clamp(35px, 5vh, 45px);
+    margin: clamp(10px, 1.5vh, 15px) auto;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.city { font-size: clamp(20px, 4vh, 36px); font-weight: 700; margin-bottom: clamp(5px, 1vh, 10px); text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-.date-time { text-align: center; font-size: clamp(12px, 2vh, 18px); opacity: 0.9; margin-bottom: clamp(10px, 2vh, 20px); }
-.main-temp-container { display: flex; justify-content: center; align-items: center; gap: clamp(10px, 2vh, 25px); margin: clamp(10px, 2vh, 20px) 0; flex-wrap: wrap; }
-.weather-icon { font-size: clamp(50px, 10vh, 100px); filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); animation: bounce 2s infinite; }
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-.temp-main { font-size: clamp(50px, 10vh, 90px); font-weight: 700; line-height: 1; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
-.desc { text-align: center; font-size: clamp(16px, 3vh, 24px); margin-bottom: clamp(5px, 1vh, 10px); text-transform: capitalize; font-weight: 300; }
-.feels-like { text-align: center; font-size: clamp(12px, 2.5vh, 18px); opacity: 0.8; margin-bottom: clamp(10px, 2vh, 20px); }
+.city {
+    font-size: clamp(22px, 3.5vh, 32px);
+    font-weight: 700;
+    margin-bottom: 2px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.date-time {
+    text-align: center;
+    font-size: clamp(11px, 1.8vh, 15px);
+    opacity: 0.9;
+    margin-bottom: clamp(8px, 1.5vh, 15px);
+}
+
+.main-temp-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(8px, 1.5vh, 20px);
+    margin: clamp(5px, 1vh, 15px) 0;
+    flex-wrap: wrap;
+}
+
+.weather-icon {
+    font-size: clamp(40px, 8vh, 80px);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.temp-main {
+    font-size: clamp(45px, 8vh, 80px);
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+
+.desc {
+    text-align: center;
+    font-size: clamp(14px, 2.5vh, 20px);
+    margin-bottom: 2px;
+    text-transform: capitalize;
+    font-weight: 300;
+}
+
+.feels-like {
+    text-align: center;
+    font-size: clamp(11px, 2vh, 16px);
+    opacity: 0.8;
+    margin-bottom: clamp(8px, 1.5vh, 15px);
+}
 
 .details-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: clamp(8px, 1.5vh, 15px); margin-top: clamp(10px, 2vh, 20px);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(6px, 1vh, 10px);
+    margin-bottom: clamp(8px, 1.5vh, 15px);
 }
-.detail-card {
-    background: rgba(255, 255, 255, 0.1); border-radius: clamp(10px, 2vh, 15px); padding: clamp(8px, 1.5vh, 15px);
-    text-align: center; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.3s ease;
-}
-.detail-card:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.2); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
-.detail-icon { font-size: clamp(20px, 4vh, 32px); margin-bottom: clamp(4px, 1vh, 8px); }
-.detail-label { font-size: clamp(10px, 1.8vh, 14px); opacity: 0.8; margin-bottom: clamp(3px, 0.5vh, 5px); }
-.detail-value { font-size: clamp(14px, 2.5vh, 20px); font-weight: 600; }
 
-.progress-container { margin-top: clamp(10px, 2vh, 20px); }
-.progress-item { margin-bottom: clamp(10px, 2vh, 15px); }
-.progress-label { display: flex; justify-content: space-between; margin-bottom: clamp(4px, 1vh, 8px); font-size: clamp(11px, 2vh, 15px); }
-.progress-bar { width: 100%; height: clamp(8px, 1.5vh, 12px); background: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; position: relative; }
-.progress-fill { height: 100%; border-radius: 10px; transition: width 1.5s ease-out; background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 100%); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+.detail-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: clamp(6px, 1vh, 10px) 4px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.detail-icon { font-size: clamp(16px, 3vh, 24px); margin-bottom: 2px; }
+.detail-label { font-size: clamp(9px, 1.5vh, 12px); opacity: 0.8; margin-bottom: 2px; }
+.detail-value { font-size: clamp(12px, 2vh, 15px); font-weight: 600; }
+
+.progress-container { margin-bottom: clamp(8px, 1.5vh, 15px); }
+.progress-item { margin-bottom: clamp(6px, 1vh, 10px); }
+.progress-label { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: clamp(10px, 1.6vh, 13px); }
+.progress-bar { width: 100%; height: clamp(6px, 1vh, 9px); background: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 100%); }
 
 .sun-times {
-    display: flex; justify-content: space-around; margin-top: clamp(10px, 2vh, 20px); padding-top: clamp(10px, 2vh, 15px); border-top: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    justify-content: space-around;
+    padding-top: clamp(8px, 1.2vh, 12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: clamp(8px, 1.5vh, 15px);
 }
 .sun-time { text-align: center; }
-.sun-icon { font-size: clamp(25px, 5vh, 40px); margin-bottom: clamp(4px, 1vh, 8px); }
-.sun-label { font-size: clamp(10px, 1.8vh, 14px); opacity: 0.8; }
-.sun-value { font-size: clamp(12px, 2.5vh, 18px); font-weight: 600; margin-top: clamp(3px, 0.5vh, 5px); }
+.sun-icon { font-size: clamp(20px, 4vh, 32px); margin-bottom: 2px; }
+.sun-label { font-size: clamp(9px, 1.5vh, 12px); opacity: 0.8; }
+.sun-value { font-size: clamp(11px, 2vh, 15px); font-weight: 600; margin-top: 2px; }
 
-/* Прогноз на 6 часов */
+/* Почасовой прогноз на 6 часов (компактный) */
 .forecast-container {
-    margin-top: clamp(15px, 2vh, 25px); padding-top: clamp(10px, 2vh, 15px); border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: clamp(8px, 1.2vh, 12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
-.forecast-title { font-size: clamp(12px, 2vh, 15px); opacity: 0.8; margin-bottom: clamp(8px, 1vh, 12px); text-align: center; }
-.forecast-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(5px, 1vw, 10px); }
-.forecast-card {
-    background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: clamp(6px, 1vh, 10px) 4px; text-align: center; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.15);
-}
-.forecast-time { font-size: clamp(10px, 1.5vh, 12px); opacity: 0.8; margin-bottom: 4px; }
-.forecast-icon { font-size: clamp(18px, 3vh, 26px); margin: 2px 0; }
-.forecast-temp { font-size: clamp(11px, 2vh, 14px); font-weight: 600; }
 
-.actions-container { text-align: center; margin-top: clamp(15px, 2vh, 25px); }
-.refresh-btn {
-    background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: #fff;
-    padding: clamp(8px, 1.5vh, 12px) clamp(20px, 3vw, 30px); border-radius: 12px; font-size: clamp(12px, 2vh, 16px);
-    font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s ease;
+.forecast-title {
+    font-size: clamp(11px, 1.8vh, 14px);
+    opacity: 0.8;
+    margin-bottom: 6px;
+    text-align: center;
 }
-.refresh-btn:hover { background: rgba(255, 255, 255, 0.35); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-.refresh-btn:active { transform: translateY(0); }
+
+.forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+}
+
+.forecast-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 6px 2px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.forecast-time {
+    font-size: clamp(9px, 1.4vh, 11px);
+    opacity: 0.8;
+    margin-bottom: 2px;
+}
+
+.forecast-icon {
+    font-size: clamp(14px, 2.2vh, 20px);
+    margin: 2px 0;
+}
+
+.forecast-temp {
+    font-size: clamp(10px, 1.6vh, 13px);
+    font-weight: 600;
+}
+
+.actions-container {
+    text-align: center;
+    margin-top: clamp(10px, 1.5vh, 15px);
+}
+
+.refresh-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #fff;
+    padding: clamp(6px, 1.2vh, 10px) clamp(16px, 2.5vw, 25px);
+    border-radius: 10px;
+    font-size: clamp(11px, 1.8vh, 15px);
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
 
 @media (max-width: 480px) {
     .details-grid { grid-template-columns: repeat(2, 1fr); }
-    .forecast-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
 }
 </style>
 </head>
@@ -160,16 +273,7 @@ body {
     <div class="circle"></div>
 </div>
 
-<!-- Экран авторизации (SHA-256 хэш защиты) -->
-<div id="auth-screen">
-    <h2>🔒 Введите пароль</h2>
-    <input type="password" id="password-input" placeholder="Пароль..." onkeypress="if(event.key === 'Enter') checkPassword()">
-    <button onclick="checkPassword()">Войти</button>
-    <div id="error-msg"></div>
-</div>
-
-<!-- Защищенный контент погоды -->
-<div id="wrapper" class="hidden">
+<div id="wrapper">
     <div class="loading">
         <div class="spinner"></div>
         <div>Загрузка данных...</div>
@@ -255,39 +359,6 @@ body {
 </div>
 
 <script>
-// Пароль по умолчанию установлен: secret123
-// Его SHA-256 хэш:
-const CORRECT_HASH = "2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b";
-
-async function hashString(string) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(string);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function checkPassword() {
-    const input = document.getElementById('password-input').value;
-    const inputHash = await hashString(input);
-
-    if (inputHash === CORRECT_HASH) {
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('wrapper').classList.remove('hidden');
-        sessionStorage.setItem('isAuth', 'true');
-        fetchAllWeather();
-    } else {
-        document.getElementById('error-msg').innerText = 'Неверный пароль!';
-    }
-}
-
-// Если сессия уже активна — сразу показываем погоду
-if (sessionStorage.getItem('isAuth') === 'true') {
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('wrapper').classList.remove('hidden');
-    fetchAllWeather();
-}
-
 const apiKey = 'ee55c147b4b02ec88cbd9a86bdd80407';
 const city = 'Tyumen';
 
@@ -350,14 +421,25 @@ async function fetchAllWeather() {
         document.querySelector('.sunrise').textContent = formatTime(currentData.sys.sunrise, currentData.timezone);
         document.querySelector('.sunset').textContent = formatTime(currentData.sys.sunset, currentData.timezone);
 
+        // Прогноз начиная со следующего часа (+1 текущий час) на 6 шагов вперед
         const forecastGrid = document.getElementById('forecast-grid');
         forecastGrid.innerHTML = '';
         
-        forecastData.list.slice(0, 6).forEach(item => {
+        const currentHour = new Date().getHours();
+        // Фильтруем элементы прогноза, оставляя только те, которые идут после текущего часа
+        const futureItems = forecastData.list.filter(item => {
+            const itemHour = parseInt(item.dt_txt.slice(11, 13));
+            return itemHour > currentHour || new Date(item.dt * 1000).getDate() > new Date().getDate();
+        });
+
+        const next6Hours = (futureItems.length >= 6 ? futureItems : forecastData.list).slice(0, 6);
+
+        next6Hours.forEach(item => {
+            const timeStr = item.dt_txt.slice(11, 16);
             const card = document.createElement('div');
             card.className = 'forecast-card';
             card.innerHTML = `
-                <div class="forecast-time">${item.dt_txt.slice(11, 16)}</div>
+                <div class="forecast-time">${timeStr}</div>
                 <div class="forecast-icon">${getWeatherEmoji(item.weather[0].icon)}</div>
                 <div class="forecast-temp">${Math.round(item.main.temp)}°</div>
             `;
@@ -366,23 +448,19 @@ async function fetchAllWeather() {
 
     } catch (error) {
         console.error('Ошибка:', error);
-        document.querySelector('.loading').innerHTML = '<div>❌ Ошибка загрузки данных</div>';
+        document.querySelector('.loading').innerHTML = '<div>❌ Ошибка загрузки</div>';
     }
 }
 
+fetchAllWeather();
+
 // Часы каждую минуту
 setInterval(() => {
-    if (sessionStorage.getItem('isAuth') === 'true') {
-        document.querySelector('.date-time').textContent = updateDateTime();
-    }
+    document.querySelector('.date-time').textContent = updateDateTime();
 }, 60000);
 
 // Автообновление каждые 15 минут
-setInterval(() => {
-    if (sessionStorage.getItem('isAuth') === 'true') {
-        fetchAllWeather();
-    }
-}, 15 * 60 * 1000);
+setInterval(fetchAllWeather, 15 * 60 * 1000);
 </script>
 </body>
 </html>
