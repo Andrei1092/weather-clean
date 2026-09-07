@@ -180,7 +180,59 @@ body {
 .progress-bar { width: 100%; height: clamp(6px, 1vh, 9px); background: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 100%); }
 
-/* 3 колонки вместо 2: Восход, Закат, Луна */
+/* Увеличенный почасовой прогноз (выше по иерархии) */
+.forecast-container {
+    padding-top: clamp(8px, 1.2vh, 12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: clamp(8px, 1.5vh, 15px);
+}
+
+.forecast-title {
+    font-size: clamp(12px, 2vh, 15px);
+    opacity: 0.9;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+}
+
+.forecast-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 8px 4px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: transform 0.2s;
+}
+
+.forecast-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.forecast-time {
+    font-size: clamp(10px, 1.5vh, 12px);
+    opacity: 0.9;
+    margin-bottom: 3px;
+}
+
+.forecast-icon {
+    font-size: clamp(18px, 2.8vh, 26px);
+    margin: 3px 0;
+}
+
+.forecast-temp {
+    font-size: clamp(11px, 1.8vh, 15px);
+    font-weight: 600;
+}
+
+/* Компактный блок Восход, Закат и Луна (ниже) */
 .sun-times {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -191,58 +243,14 @@ body {
 }
 .sun-time {
     text-align: center;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 6px 2px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-.sun-icon { font-size: clamp(18px, 3.5vh, 28px); margin-bottom: 2px; }
-.sun-label { font-size: clamp(9px, 1.5vh, 12px); opacity: 0.8; }
-.sun-value { font-size: clamp(11px, 1.8vh, 14px); font-weight: 600; margin-top: 2px; }
-
-/* Почасовой прогноз на 6 часов */
-.forecast-container {
-    padding-top: clamp(8px, 1.2vh, 12px);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.forecast-title {
-    font-size: clamp(11px, 1.8vh, 14px);
-    opacity: 0.8;
-    margin-bottom: 6px;
-    text-align: center;
-}
-
-.forecast-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 5px;
-}
-
-.forecast-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 6px 2px;
-    text-align: center;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 4px 2px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-.forecast-time {
-    font-size: clamp(9px, 1.4vh, 11px);
-    opacity: 0.8;
-    margin-bottom: 2px;
-}
-
-.forecast-icon {
-    font-size: clamp(14px, 2.2vh, 20px);
-    margin: 2px 0;
-}
-
-.forecast-temp {
-    font-size: clamp(10px, 1.6vh, 13px);
-    font-weight: 600;
-}
+.sun-icon { font-size: clamp(14px, 2.5vh, 20px); margin-bottom: 1px; }
+.sun-label { font-size: clamp(8px, 1.3vh, 11px); opacity: 0.7; }
+.sun-value { font-size: clamp(10px, 1.6vh, 13px); font-weight: 600; margin-top: 1px; }
 
 .actions-container {
     text-align: center;
@@ -342,6 +350,13 @@ body {
             </div>
         </div>
         
+        <!-- Почасовой прогноз (увеличенный и выше) -->
+        <div class="forecast-container">
+            <div class="forecast-title">Прогноз по часам (следующие 6 часов)</div>
+            <div class="forecast-grid" id="forecast-grid"></div>
+        </div>
+
+        <!-- Блок Восход, Закат и Луна (компактный и ниже) -->
         <div class="sun-times">
             <div class="sun-time">
                 <div class="sun-icon">🌅</div>
@@ -358,11 +373,6 @@ body {
                 <div class="sun-label">Луна</div>
                 <div class="sun-value" id="moon-phase">Растущая</div>
             </div>
-        </div>
-
-        <div class="forecast-container">
-            <div class="forecast-title">Прогноз по часам (следующие 6 часов)</div>
-            <div class="forecast-grid" id="forecast-grid"></div>
         </div>
 
         <div class="actions-container">
@@ -392,9 +402,7 @@ function getWeatherDescription(code) {
     return map[code] || 'Облачно';
 }
 
-// Функция для расчета лунной фазы по дате
 function getMoonPhaseInfo(date = new Date()) {
-    // Известное новолуние как точка отсчета
     const knownNewMoon = new Date('2023-01-21T20:53:00Z');
     const diffDays = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
     const synodicMonth = 29.53058770576;
@@ -453,12 +461,10 @@ async function fetchWeather() {
         document.querySelector('.clouds-percent').textContent = current.cloud_cover + '%';
         document.getElementById('clouds-bar').style.width = current.cloud_cover + '%';
 
-        // Обновляем информацию о луне
         const moon = getMoonPhaseInfo();
         document.getElementById('moon-icon').textContent = moon.icon;
         document.getElementById('moon-phase').textContent = moon.name;
 
-        // Почасовой прогноз
         const forecastGrid = document.getElementById('forecast-grid');
         forecastGrid.innerHTML = '';
 
