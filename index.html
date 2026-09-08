@@ -315,9 +315,9 @@ body {
                 <div class="detail-value pressure"></div>
             </div>
             <div class="detail-card">
-                <div class="detail-icon">👁️</div>
-                <div class="detail-label">Видимость</div>
-                <div class="detail-value visibility"></div>
+                <div class="detail-icon"></div>
+                <div class="detail-label"></div>
+                <div class="detail-value"></div>
             </div>
         </div>
         
@@ -443,8 +443,10 @@ async function fetchWeather() {
         
         document.querySelector('.wind-speed').textContent = current.wind_speed_10m + ' м/с';
         document.querySelector('.humidity').textContent = current.relative_humidity_2m + '%';
-        document.querySelector('.pressure').textContent = Math.round(current.surface_pressure) + ' гПа';
-        document.querySelector('.visibility').textContent = '10.0 км';
+        
+        // Перевод гПа / гектопаскалей (surface_pressure) в мм рт. ст. (умножаем на 0.750062)
+        const pressureMmHg = Math.round(current.surface_pressure * 0.750062);
+        document.querySelector('.pressure').textContent = pressureMmHg + ' мм';
         
         document.querySelector('.humidity-percent').textContent = current.relative_humidity_2m + '%';
         document.getElementById('humidity-bar').style.width = current.relative_humidity_2m + '%';
