@@ -342,7 +342,7 @@ body {
             </div>
         </div>
         
-        <!-- Почасовой прогноз -->
+        <!-- Почасовой прогноз: фиксированно на 17:00, 18:00, 19:00, 20:00, 21:00, 22:00 -->
         <div class="forecast-container">
             <div class="forecast-grid" id="forecast-grid"></div>
         </div>
@@ -405,7 +405,7 @@ function getMoonPhaseInfo(date = new Date()) {
     } else if (normalizedPhase < 0.22) {
         return { name: 'Растущая', icon: '🌒' };
     } else if (normalizedPhase < 0.28) {
-        return { name: 'Первая четверть', icon: '🌓' };
+        name = 'Первая четверть'; return { name: 'Первая четверть', icon: '🌓' };
     } else if (normalizedPhase < 0.47) {
         return { name: 'Растущая', icon: '🌔' };
     } else if (normalizedPhase < 0.53) {
@@ -441,7 +441,6 @@ async function fetchWeather() {
         document.querySelector('.desc').textContent = getWeatherDescription(current.weather_code);
         document.querySelector('.feels-like').textContent = `Ощущается как ${Math.round(current.apparent_temperature)}°`;
         
-        // Исправлено: перевод км/ч в м/с (делим на 3.6 и округляем до 1 знака)
         const windSpeedMs = (current.wind_speed_10m / 3.6).toFixed(1);
         document.querySelector('.wind-speed').textContent = windSpeedMs + ' м/с';
         
@@ -463,39 +462,62 @@ async function fetchWeather() {
         document.getElementById('moon-icon').textContent = moon.icon;
         document.getElementById('moon-phase').textContent = moon.name;
 
+        // Фиксируем прогноз на вечернее время: всегда показываем с 17:00 до 22:00 текущего дня
         const forecastGrid = document.getElementById('forecast-grid');
         forecastGrid.innerHTML = '';
 
-        // Находим индекс ближайшего часа, который строго СЛЕДУЕТ за текущим (+1 час)
-        const now = new Date();
-        const currentHour = now.getHours();
-        const currentDateStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        // Ищем в массиве данных элементы, у которых время заканчивается на 17:00, 18:00, 19:00, 20:00, 21:00, 22:00 сегодняшнего дня
+        const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+        const targetHours = ['17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
 
-        let startIndex = 0;
+        const eveningItems = [];
         for (let i = 0; i < data.hourly.time.length; i++) {
-            const itemTime = new Date(data.hourly.time[i]);
-            // Ищем первый час, который больше текущего часа сегодня (или в следующие дни)
-            if (itemTime > now) {
-                startIndex = i;
-                break;
+            const timeStr = data.hourly.time[i]; // например "2026-09-09T17:00"
+            if (timeStr.startsWith(todayStr)) {
+                const hourPart = timeStr.slice(11, 16);
+                if (targetHours.includes(hourPart)) {
+                    eveningItems.push({
+                        time: hourPart,
+                        temp: data.hourly.temperature_2m[i],
+                        code: data.hourly.weather_code[i]
+                    });
+                }
             }
         }
 
-        const next6HoursTimes = data.hourly.time.slice(startIndex, startIndex + 6);
-        const next6HoursTemps = data.hourly.temperature_2m.slice(startIndex, startIndex + 6);
-        const next6HoursCodes = data.hourly.weather_code.slice(startIndex, startIndex + 6);
+        // Если по какой-то причине на сегодня с 17:00 не нашлось, берем просто следующие 6 часов
+        const itemsToDisplay = eveningItems.length >= 6 ? eveningItems : [];
+        if (itemsToDisplay.length === 0) {
+            // Запасной вариант: если сейчас уже позже 22:00, показываем с 17:00 следующего дня
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+            
+            for (let i = 0; i < data.hourly.time.length; i++) {
+                const timeStr = data.hourly.time[i];
+                if (timeStr.startsWith(tomorrowStr)) {
+                    const hourPart = timeStr.slice(11, 16);
+                    if (targetHours.includes(hourPart)) {
+                        itemsToDisplay.push({
+                            time: hourPart,
+                            temp: data.hourly.temperature_2m[i],
+                            code: data.hourly.weather_code[i]
+                        });
+                    }
+                }
+            }
+        }
 
-        for (let i = 0; i < next6HoursTimes.length; i++) {
-            const timeFormatted = next6HoursTimes[i].slice(11, 16); // "17:00", "18:00" и т.д.
+        itemsToDisplay.slice(0, 6).forEach(item => {
             const card = document.createElement('div');
             card.className = 'forecast-card';
             card.innerHTML = `
-                <div class="forecast-time">${timeFormatted}</div>
-                <div class="forecast-icon">${getWeatherEmoji(next6HoursCodes[i])}</div>
-                <div class="forecast-temp">${Math.round(next6HoursTemps[i])}°</div>
+                <div class="forecast-time">${item.time}</div>
+                <div class="forecast-icon">${getWeatherEmoji(item.code)}</div>
+                <div class="forecast-temp">${Math.round(item.temp)}°</div>
             `;
             forecastGrid.appendChild(card);
-        }
+        });
 
     } catch (error) {
         console.error('Ошибка:', error);
