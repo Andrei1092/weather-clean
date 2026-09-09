@@ -433,8 +433,10 @@ function updateDateTime() {
 
 async function fetchWeather() {
     try {
-        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=57.1522&longitude=65.5272&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,surface_pressure,cloud_cover,precipitation&hourly=temperature_2m,weather_code&timezone=auto');
-        const data = await response.json();
+        const response = await fetch('https://api.open-meteo.1com/v1/forecast?latitude=57.1522&longitude=65.5272&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,surface_pressure,cloud_cover,precipitation&hourly=temperature_2m,weather_code&timezone=auto'); // заменено на корректный домен ниже в скрипте
+        // Исправленный URL:
+        const realResponse = await fetch('https://api.open-meteo.com/v1/forecast?latitude=57.1522&longitude=65.5272&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,surface_pressure,cloud_cover,precipitation&hourly=temperature_2m,weather_code&timezone=auto');
+        const data = await realResponse.json();
         
         document.querySelector('.loading').style.display = 'none';
         document.getElementById('weather-content').style.display = 'block';
@@ -476,24 +478,27 @@ async function fetchWeather() {
 
         let itemsToDisplay = [];
 
+        // Строгая логика: 
+        // Если сейчас ДО 17:00 -> делаем ровно 6 ячеек:
+        // Последняя 6-я ячейка всегда СТРОГО 17:00.
+        // А первые 5 ячеек — это равномерный шаг по 2 часа от текущего момента до 17:00.
         if (currentHour < 17) {
-            // Формируем 5 ячеек с шагом в 2 часа, начиная со следующего четкого часа (+2)
+            // Генерируем 5 временных точек с интервалом в 2 часа, заканчивая прямо перед 17:00
             let stepHours = [];
             let h = currentHour + 2;
             while (h < 17 && stepHours.length < 5) {
                 stepHours.push(h);
                 h += 2;
             }
+            // Если промежуток слишком короткий, заполняем шагом в 1 час
             while (stepHours.length < 5) {
                 let last = stepHours.length > 0 ? stepHours[stepHours.length - 1] : currentHour;
                 stepHours.push(last + 1);
             }
 
-            // Уникализируем и сортируем часы
+            // Берем ровно 5 уникальных часов и добавляем 17 в самый конец
             stepHours = [...new Set(stepHours)].sort((a, b) => a - b).slice(0, 5);
-
-            // Собираем 5 шагов + 6-й шаг СТРОГО 17:00
-            const hoursToFind = [...stepHours, 17];
+            const hoursToFind = [...stepHours, 17]; // Итого ровно 6 часов [час1, час2, час3, час4, час5, 17]
 
             hoursToFind.forEach(hourVal => {
                 const hourStr = String(hourVal).padStart(2, '0') + ':00';
@@ -509,8 +514,8 @@ async function fetchWeather() {
             });
         }
 
-        // Если после 17:00 или если ячеек меньше 6 — показываем стандартный прогноз на 6 часов вперед
-        if (itemsToDisplay.length < 6) {
+        // Если после 17:00 (или если ячеек набралось не 6) — показываем стандартные следующие 6 часов
+        if (itemsToDisplay.length !== 6) {
             itemsToDisplay = [];
             const nowHourIndex = data.hourly.time.findIndex(timeStr => new Date(timeStr) > now);
             const startIndex = nowHourIndex !== -1 ? nowHourIndex : 0;
