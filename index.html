@@ -203,6 +203,11 @@ body {
     transition: transform 0.2s;
 }
 
+.forecast-card.target-17 {
+    border: 2px solid rgba(255, 215, 0, 0.8);
+    background: rgba(255, 215, 0, 0.15);
+}
+
 .forecast-card:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.22);
@@ -342,7 +347,7 @@ body {
             </div>
         </div>
         
-        <!-- Почасовой прогноз: фиксированно на 17:00, 18:00, 19:00, 20:00, 21:00, 22:00 -->
+        <!-- Почасовой прогноз -->
         <div class="forecast-container">
             <div class="forecast-grid" id="forecast-grid"></div>
         </div>
@@ -405,7 +410,7 @@ function getMoonPhaseInfo(date = new Date()) {
     } else if (normalizedPhase < 0.22) {
         return { name: 'Растущая', icon: '🌒' };
     } else if (normalizedPhase < 0.28) {
-        name = 'Первая четверть'; return { name: 'Первая четверть', icon: '🌓' };
+        return { name: 'Первая четверть', icon: '🌓' };
     } else if (normalizedPhase < 0.47) {
         return { name: 'Растущая', icon: '🌔' };
     } else if (normalizedPhase < 0.53) {
@@ -462,55 +467,75 @@ async function fetchWeather() {
         document.getElementById('moon-icon').textContent = moon.icon;
         document.getElementById('moon-phase').textContent = moon.name;
 
-        // Фиксируем прогноз на вечернее время: всегда показываем с 17:00 до 22:00 текущего дня
         const forecastGrid = document.getElementById('forecast-grid');
         forecastGrid.innerHTML = '';
 
-        // Ищем в массиве данных элементы, у которых время заканчивается на 17:00, 18:00, 19:00, 20:00, 21:00, 22:00 сегодняшнего дня
-        const todayStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-        const targetHours = ['17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+        const now = new Date();
+        const currentHour = now.getHours();
+        const todayStr = now.toISOString().slice(0, 10);
 
-        const eveningItems = [];
-        for (let i = 0; i < data.hourly.time.length; i++) {
-            const timeStr = data.hourly.time[i]; // например "2026-09-09T17:00"
-            if (timeStr.startsWith(todayStr)) {
-                const hourPart = timeStr.slice(11, 16);
-                if (targetHours.includes(hourPart)) {
-                    eveningItems.push({
-                        time: hourPart,
-                        temp: data.hourly.temperature_2m[i],
-                        code: data.hourly.weather_code[i]
+        let itemsToDisplay = [];
+
+        // Логика: до 17:00 (пока время меньше 17) первые 5 ячеек идут с шагом в 2 часа, а 6-я ячейка — строго 17:00.
+        // После 17:00 (или когда наступил следующий день до 6 утра) — обычный прогноз на 6 клеток подряд.
+        if (currentHour < 17) {
+            // Ищем данные на сегодня с шагом в 2 часа (например, текущий час + 2, +4, +6 и т.д.)
+            let stepHours = [];
+            let targetH = currentHour + 2;
+            while (targetH < 17 && stepHours.length < 5) {
+                stepHours.push(targetH);
+                targetH += 2;
+            }
+
+            // Добираем недостающие шаги, если до 17:00 осталось мало времени
+            while (stepHours.length < 5) {
+                let last = stepHours.length > 0 ? stepHours[stepHours.length - 1] : currentHour;
+                stepHours.push(last + 1);
+            }
+
+            // Находим данные для этих 5 часов + 6-й час ровно 17:00
+            const hoursToFind = [...stepHours, 17];
+
+            hoursToFind.forEach(h => {
+                const hourStr = String(h).padStart(2, '0') + ':00';
+                // Ищем в массиве open-meteo нужный час сегодняшнего дня
+                const idx = data.hourly.time.findIndex(t => t.startsWith(todayStr) && t.slice(11, 16) === hourStr);
+                if (idx !== -1) {
+                    itemsToDisplay.push({
+                        time: hourStr,
+                        temp: data.hourly.temperature_2m[idx],
+                        code: data.hourly.weather_code[idx],
+                        isTarget17: (h === 17)
                     });
                 }
+            });
+        }
+
+        // Если после 17:00 или если логика не набрала 6 элементов — показываем стандартные следующие 6 часов
+        if (itemsToDisplay.length < 6) {
+            itemsToDisplay = [];
+            const nowHourIndex = data.hourly.time.findIndex(timeStr => {
+                const itemDate = new Date(timeStr);
+                return itemDate > now;
+            });
+            const startIndex = nowHourIndex !== -1 ? nowHourIndex : 0;
+            const next6Times = data.hourly.time.slice(startIndex, startIndex + 6);
+            const next6Temps = data.hourly.temperature_2m.slice(startIndex, startIndex + 6);
+            const next6Codes = data.hourly.weather_code.slice(startIndex, startIndex + 6);
+
+            for (let i = 0; i < next6Times.length; i++) {
+                itemsToDisplay.push({
+                    time: next6Times[i].slice(11, 16),
+                    temp: next6Temps[i],
+                    code: next6Codes[i],
+                    isTarget17: false
+                });
             }
         }
 
-        // Если по какой-то причине на сегодня с 17:00 не нашлось, берем просто следующие 6 часов
-        const itemsToDisplay = eveningItems.length >= 6 ? eveningItems : [];
-        if (itemsToDisplay.length === 0) {
-            // Запасной вариант: если сейчас уже позже 22:00, показываем с 17:00 следующего дня
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().slice(0, 10);
-            
-            for (let i = 0; i < data.hourly.time.length; i++) {
-                const timeStr = data.hourly.time[i];
-                if (timeStr.startsWith(tomorrowStr)) {
-                    const hourPart = timeStr.slice(11, 16);
-                    if (targetHours.includes(hourPart)) {
-                        itemsToDisplay.push({
-                            time: hourPart,
-                            temp: data.hourly.temperature_2m[i],
-                            code: data.hourly.weather_code[i]
-                        });
-                    }
-                }
-            }
-        }
-
-        itemsToDisplay.slice(0, 6).forEach(item => {
+        itemsToDisplay.forEach(item => {
             const card = document.createElement('div');
-            card.className = 'forecast-card';
+            card.className = 'forecast-card' + (item.isTarget17 ? ' target-17' : '');
             card.innerHTML = `
                 <div class="forecast-time">${item.time}</div>
                 <div class="forecast-icon">${getWeatherEmoji(item.code)}</div>
