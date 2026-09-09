@@ -476,30 +476,29 @@ async function fetchWeather() {
 
         let itemsToDisplay = [];
 
-        // Строгая логика:
-        // Если сейчас ДО 17:00 (например, 6-7 утра и т.д.):
-        // Первые 5 клеток идут с шагом в 2 часа от текущего момента, а 6-я клетка СТРОГО 17:00.
-        // Если после 17:00: обычные следующие 6 часов.
         if (currentHour < 17) {
+            // Формируем 5 ячеек с шагом в 2 часа, начиная со следующего четкого часа (+2)
             let stepHours = [];
             let h = currentHour + 2;
             while (h < 17 && stepHours.length < 5) {
                 stepHours.push(h);
                 h += 2;
             }
-            // Если до 17:00 осталось меньше времени, заполняем шагом в 1 час
             while (stepHours.length < 5) {
                 let last = stepHours.length > 0 ? stepHours[stepHours.length - 1] : currentHour;
                 stepHours.push(last + 1);
             }
 
+            // Уникализируем и сортируем часы
+            stepHours = [...new Set(stepHours)].sort((a, b) => a - b).slice(0, 5);
+
+            // Собираем 5 шагов + 6-й шаг СТРОГО 17:00
             const hoursToFind = [...stepHours, 17];
 
             hoursToFind.forEach(hourVal => {
                 const hourStr = String(hourVal).padStart(2, '0') + ':00';
                 const idx = data.hourly.time.findIndex(t => t.startsWith(todayStr) && t.slice(11, 16) === hourStr);
                 if (idx !== -1) {
-                    itemsToDesign = {};
                     itemsToDisplay.push({
                         time: hourStr,
                         temp: data.hourly.temperature_2m[idx],
@@ -510,7 +509,7 @@ async function fetchWeather() {
             });
         }
 
-        // Запасной вариант (если набралось меньше 6 клеток или уже после 17:00)
+        // Если после 17:00 или если ячеек меньше 6 — показываем стандартный прогноз на 6 часов вперед
         if (itemsToDisplay.length < 6) {
             itemsToDisplay = [];
             const nowHourIndex = data.hourly.time.findIndex(timeStr => new Date(timeStr) > now);
@@ -520,11 +519,12 @@ async function fetchWeather() {
             const next6Codes = data.hourly.weather_code.slice(startIndex, startIndex + 6);
 
             for (let i = 0; i < next6Times.length; i++) {
+                const tStr = next6Times[i].slice(11, 16);
                 itemsToDisplay.push({
-                    time: next6Times[i].slice(11, 16),
+                    time: tStr,
                     temp: next6Temps[i],
                     code: next6Codes[i],
-                    isTarget17: (next6Times[i].slice(11, 16) === '17:00')
+                    isTarget17: (tStr === '17:00')
                 });
             }
         }
