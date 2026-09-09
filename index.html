@@ -441,13 +441,15 @@ async function fetchWeather() {
         document.querySelector('.desc').textContent = getWeatherDescription(current.weather_code);
         document.querySelector('.feels-like').textContent = `Ощущается как ${Math.round(current.apparent_temperature)}°`;
         
-        document.querySelector('.wind-speed').textContent = current.wind_speed_10m + ' м/с';
+        // Исправлено: перевод км/ч в м/с (делим на 3.6 и округляем до 1 знака)
+        const windSpeedMs = (current.wind_speed_10m / 3.6).toFixed(1);
+        document.querySelector('.wind-speed').textContent = windSpeedMs + ' м/с';
+        
         document.querySelector('.humidity').textContent = current.relative_humidity_2m + '%';
         
         const pressureMmHg = Math.round(current.surface_pressure * 0.750062);
         document.querySelector('.pressure').textContent = pressureMmHg + ' мм';
 
-        // Количество осадков сейчас
         const precip = current.precipitation !== undefined ? current.precipitation : 0;
         document.querySelector('.precipitation').textContent = precip + ' мм';
         
@@ -464,20 +466,29 @@ async function fetchWeather() {
         const forecastGrid = document.getElementById('forecast-grid');
         forecastGrid.innerHTML = '';
 
-        const nowHourIndex = data.hourly.time.findIndex(timeStr => {
-            const itemDate = new Date(timeStr);
-            return itemDate.getHours() > new Date().getHours() && itemDate.getDate() === new Date().getDate();
-        });
+        // Находим индекс ближайшего часа, который строго СЛЕДУЕТ за текущим (+1 час)
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentDateStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
-        const startIndex = nowHourIndex !== -1 ? nowHourIndex : 0;
+        let startIndex = 0;
+        for (let i = 0; i < data.hourly.time.length; i++) {
+            const itemTime = new Date(data.hourly.time[i]);
+            // Ищем первый час, который больше текущего часа сегодня (или в следующие дни)
+            if (itemTime > now) {
+                startIndex = i;
+                break;
+            }
+        }
+
         const next6HoursTimes = data.hourly.time.slice(startIndex, startIndex + 6);
         const next6HoursTemps = data.hourly.temperature_2m.slice(startIndex, startIndex + 6);
         const next6HoursCodes = data.hourly.weather_code.slice(startIndex, startIndex + 6);
 
         for (let i = 0; i < next6HoursTimes.length; i++) {
-            const timeFormatted = next6HoursTimes[i].slice(11, 16);
+            const timeFormatted = next6HoursTimes[i].slice(11, 16); // "17:00", "18:00" и т.д.
             const card = document.createElement('div');
-            card.className, 'forecast-card';
+            card.className = 'forecast-card';
             card.innerHTML = `
                 <div class="forecast-time">${timeFormatted}</div>
                 <div class="forecast-icon">${getWeatherEmoji(next6HoursCodes[i])}</div>
