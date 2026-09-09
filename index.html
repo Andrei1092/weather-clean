@@ -204,8 +204,8 @@ body {
 }
 
 .forecast-card.target-17 {
-    border: 2px solid rgba(255, 215, 0, 0.8);
-    background: rgba(255, 215, 0, 0.15);
+    border: 2px solid rgba(255, 215, 0, 0.9);
+    background: rgba(255, 215, 0, 0.2);
 }
 
 .forecast-card:hover {
@@ -476,48 +476,44 @@ async function fetchWeather() {
 
         let itemsToDisplay = [];
 
-        // Логика: до 17:00 (пока время меньше 17) первые 5 ячеек идут с шагом в 2 часа, а 6-я ячейка — строго 17:00.
-        // После 17:00 (или когда наступил следующий день до 6 утра) — обычный прогноз на 6 клеток подряд.
+        // Строгая логика:
+        // Если сейчас ДО 17:00 (например, 6-7 утра и т.д.):
+        // Первые 5 клеток идут с шагом в 2 часа от текущего момента, а 6-я клетка СТРОГО 17:00.
+        // Если после 17:00: обычные следующие 6 часов.
         if (currentHour < 17) {
-            // Ищем данные на сегодня с шагом в 2 часа (например, текущий час + 2, +4, +6 и т.д.)
             let stepHours = [];
-            let targetH = currentHour + 2;
-            while (targetH < 17 && stepHours.length < 5) {
-                stepHours.push(targetH);
-                targetH += 2;
+            let h = currentHour + 2;
+            while (h < 17 && stepHours.length < 5) {
+                stepHours.push(h);
+                h += 2;
             }
-
-            // Добираем недостающие шаги, если до 17:00 осталось мало времени
+            // Если до 17:00 осталось меньше времени, заполняем шагом в 1 час
             while (stepHours.length < 5) {
                 let last = stepHours.length > 0 ? stepHours[stepHours.length - 1] : currentHour;
                 stepHours.push(last + 1);
             }
 
-            // Находим данные для этих 5 часов + 6-й час ровно 17:00
             const hoursToFind = [...stepHours, 17];
 
-            hoursToFind.forEach(h => {
-                const hourStr = String(h).padStart(2, '0') + ':00';
-                // Ищем в массиве open-meteo нужный час сегодняшнего дня
+            hoursToFind.forEach(hourVal => {
+                const hourStr = String(hourVal).padStart(2, '0') + ':00';
                 const idx = data.hourly.time.findIndex(t => t.startsWith(todayStr) && t.slice(11, 16) === hourStr);
                 if (idx !== -1) {
+                    itemsToDesign = {};
                     itemsToDisplay.push({
                         time: hourStr,
                         temp: data.hourly.temperature_2m[idx],
                         code: data.hourly.weather_code[idx],
-                        isTarget17: (h === 17)
+                        isTarget17: (hourVal === 17)
                     });
                 }
             });
         }
 
-        // Если после 17:00 или если логика не набрала 6 элементов — показываем стандартные следующие 6 часов
+        // Запасной вариант (если набралось меньше 6 клеток или уже после 17:00)
         if (itemsToDisplay.length < 6) {
             itemsToDisplay = [];
-            const nowHourIndex = data.hourly.time.findIndex(timeStr => {
-                const itemDate = new Date(timeStr);
-                return itemDate > now;
-            });
+            const nowHourIndex = data.hourly.time.findIndex(timeStr => new Date(timeStr) > now);
             const startIndex = nowHourIndex !== -1 ? nowHourIndex : 0;
             const next6Times = data.hourly.time.slice(startIndex, startIndex + 6);
             const next6Temps = data.hourly.temperature_2m.slice(startIndex, startIndex + 6);
@@ -528,7 +524,7 @@ async function fetchWeather() {
                     time: next6Times[i].slice(11, 16),
                     temp: next6Temps[i],
                     code: next6Codes[i],
-                    isTarget17: false
+                    isTarget17: (next6Times[i].slice(11, 16) === '17:00')
                 });
             }
         }
